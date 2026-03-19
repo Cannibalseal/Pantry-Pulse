@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PotravinyPulse - Inflation Guard</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .price { font-weight: bold; color: #007bff; }
+        .empty { text-align: center; color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>PotravinyPulse - Grocery Price Tracker</h1>
+    <p>Latest price entries across Slovak retailers.</p>
+    {% if prices %}
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Store</th>
+                <th>Price</th>
+                <th>City</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in prices %}
+            <tr>
+                <td>{{ entry.product.name }} ({{ entry.product.unit }})</td>
+                <td>{{ entry.store.name }}</td>
+                <td class="price">{{ "%.2f"|format(entry.price) }} €</td>
+                <td>{{ entry.store.city }}</td>
+                <td>{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No price data yet. Add some entries to the database!</p>
+    {% endif %}
+    <footer>
+        <p><small>Built with Flask & SQLAlchemy. Scraper ready for Tesco.sk and more.</small></p>
+    </footer>
+</body>
+</html>
+
