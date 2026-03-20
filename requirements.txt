@@ -6,4 +6,6 @@ requests==2.32.3
 beautifulsoup4==4.12.3
 loguru==0.7.2
 Werkzeug==3.0.3
-
+selenium==4.25.0
+webdriver-manager==4.0.2
+tenacity==9.0.0

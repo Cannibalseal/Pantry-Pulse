@@ -1,51 +1,183 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PotravinyPulse - Inflation Guard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pantry Pulse - Sleduj ceny</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-        h1 { color: #333; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .price { font-weight: bold; color: #007bff; }
-        .empty { text-align: center; color: #666; font-style: italic; }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+            min-height: 100vh;
+            padding-bottom: 20px;
+        }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 30px 15px; 
+            text-align: center; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header h1 { 
+            margin: 0; 
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            font-weight: 600;
+        }
+        .header p { 
+            margin: 8px 0 0 0; 
+            font-size: clamp(0.9rem, 3vw, 1rem);
+            opacity: 0.95;
+        }
+        .container { padding: 0 15px; }
+        .card { 
+            border: none; 
+            border-radius: 15px; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12); 
+            transition: all 0.3s ease;
+            height: 100%;
+            overflow: hidden;
+            background: white;
+        }
+        .card:active { 
+            transform: translateY(-2px);
+        }
+        @media (hover: hover) {
+            .card:hover { 
+                transform: translateY(-8px);
+                box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+            }
+        }
+        .card-body { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            min-height: 280px;
+        }
+        .product-image {
+            width: 140px;
+            height: 140px;
+            object-fit: contain;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            padding: 10px;
+        }
+        .card-title {
+            font-size: clamp(0.9rem, 2vw, 1.05rem);
+            font-weight: 600;
+            margin: 10px 0 5px 0;
+            color: #333;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+        .card-text {
+            font-size: 0.85rem;
+            color: #999;
+            margin: 0;
+        }
+        .alert {
+            border-radius: 12px;
+            margin: 15px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: none;
+        }
+        .alert-info { background-color: #e3f2fd; color: #1565c0; }
+        .alert-warning { background-color: #fff3e0; color: #e65100; }
+        .section-title {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .section-subtitle {
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .row { margin: -12px; }
+        [class*="col-"] { padding: 12px; }
+        
+        @media (max-width: 768px) {
+            .header { padding: 20px 10px; margin-bottom: 15px; }
+            .container { margin: 0 auto; padding: 0 10px; }
+            .row { margin: -8px; }
+            [class*="col-"] { padding: 8px; }
+            .card-body { min-height: 240px; }
+            .product-image { width: 110px; height: 110px; }
+        }
+        
+        @media (max-width: 480px) {
+            .header { padding: 15px 8px; margin-bottom: 10px; }
+            .container { padding: 0 8px; }
+            .row { margin: -6px; }
+            [class*="col-"] { padding: 6px; }
+            .card-body { min-height: 220px; padding: 15px; }
+            .product-image { width: 90px; height: 90px; }
+            .card-title { font-size: 0.85rem; }
+        }
+
+        a { text-decoration: none !important; }
+        a:visited { color: inherit; }
     </style>
 </head>
 <body>
-    <h1>PotravinyPulse - Grocery Price Tracker</h1>
-    <p>Latest price entries across Slovak retailers.</p>
-    {% if prices %}
-    <table>
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Store</th>
-                <th>Price</th>
-                <th>City</th>
-                <th>Timestamp</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for entry in prices %}
-            <tr>
-                <td>{{ entry.product.name }} ({{ entry.product.unit }})</td>
-                <td>{{ entry.store.name }}</td>
-                <td class="price">{{ "%.2f"|format(entry.price) }} €</td>
-                <td>{{ entry.store.city }}</td>
-                <td>{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-            </tr>
+    <div class="header">
+        <div class="container">
+            <h1>🛒 Pantry Pulse</h1>
+            <p>Sleduj ceny potravín v reálnom čase</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    {{ messages[0] }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="mb-4">
+            <h2 class="section-title">Najnovšie ceny</h2>
+            <p class="section-subtitle">Porovnaj ceny vo všetkých obchodoch</p>
+        </div>
+
+        {% if products %}
+        <div class="row" id="products-grid">
+            {% for product in products %}
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <a href="/product/{{ product.name.lower().replace(' ', '-') }}" class="text-decoration-none">
+                    <div class="card">
+                        <div class="card-body">
+                            <img src="{{ get_product_image_url(product.name) }}" 
+                                 alt="{{ product.name }}" 
+                                 class="product-image"
+                                 loading="lazy">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text">Porovnaj ceny &rarr;</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
             {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p class="empty">No price data yet. Add some entries to the database!</p>
-    {% endif %}
-    <footer>
-        <p><small>Built with Flask & SQLAlchemy. Scraper ready for Tesco.sk and more.</small></p>
-    </footer>
+        </div>
+        {% else %}
+        <div class="alert alert-warning text-center" role="alert">
+            <h5 class="mb-2">📦 Bez dát</h5>
+            <p class="mb-0">Dáta sa aktualizujú automaticky. Prosím, vrátite sa o chvíľu.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
