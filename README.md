@@ -1,7 +1,5 @@
 # Pantry Pulse 🛒
 
-## English
-
 ### Overview
 **Pantry Pulse** is a real-time grocery price comparison web application that scrapes product prices from major Slovak supermarkets and displays price trends, inflation rates, and the best deals.
 
@@ -67,11 +65,6 @@
 - Each product page shows a 90-day price chart
 - View inflation rate (% price change)
 - See min/max prices in the period
-
-#### Manual Scraping
-- Click "Scrape Now" button to manually trigger price updates
-- Updates run in background without blocking the page
-- Check logs for scraping status
 
 ### Configuration
 
@@ -147,8 +140,6 @@ Contributions welcome! Please:
 
 ---
 
-## Slovenčina
-
 ### Popis
 **Pantry Pulse** je webová aplikácia na porovnávanie cien potravín v reálnom čase, ktorá automaticky zbiera ceny produktov z veľkých slovenských supermarketov a zobrazuje trendy cien, mieru inflácie a najlepšie ponuky.
 
@@ -214,11 +205,6 @@ Contributions welcome! Please:
 - Každá stránka produktu obsahuje graf cien za 90 dní
 - Vidíte mieru inflácie (% zmena ceny)
 - Vidíte minimálne a maximálne ceny za period
-
-#### Manuálne zbieranie cien
-- Kliknutím na tlačidlo "Zbierať teraz" spustíte manuálnu aktualizáciu
-- Aktualizácie sa vykonávajú na pozadí bez blokovania stránky
-- Skontrolujte logy pre status zbierania
 
 ### Nastavenie
 
