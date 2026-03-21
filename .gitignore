@@ -19,32 +19,71 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual environments
 venv/
 env/
 ENV/
+venv.bak/
+env.bak/
 
 # Logs
 *.log
 app.log
 logs/
+*.log.*
 
 # Environment
 .env
 .env.local
 .env.*.local
+.env.prod
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
+instance/
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
 
 # OS
 .DS_Store
 Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Flask
+instance/
+.webassets-cache
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Temporary files
+*.tmp
+*.temp
+*~
+\#*\#
+
+# Frontend (if adding Node.js dependencies)
+node_modules/
+npm-debug.log
+dist/
+
 

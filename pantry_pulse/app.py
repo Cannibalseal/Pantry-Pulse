@@ -202,7 +202,98 @@ def product_detail(slug):
         abort(404)
 
     entries = PriceEntry.query.filter_by(product_id=product.id).join(Store).order_by(PriceEntry.price.asc()).limit(50).all()
-    return render_template('product_detail.html', product=product, entries=entries)
+    return render_template('product_detail.html', product=product, entries=entries, product_id=product.id)
+
+@app.route('/api/product/<slug>/history')
+def product_history_api(slug):
+    """Return historical price data for charting (last 90 days, average by day)"""
+    from flask import jsonify
+    
+    product_name = slug.replace('-', ' ').title()
+    product = Product.query.filter(Product.name.ilike(product_name)).first()
+    if not product:
+        abort(404)
+    
+    # Get all price entries for the last 90 days
+    cutoff_date = datetime.utcnow() - timedelta(days=90)
+    entries = PriceEntry.query.filter(
+        PriceEntry.product_id == product.id,
+        PriceEntry.timestamp >= cutoff_date
+    ).order_by(PriceEntry.timestamp.asc()).all()
+    
+    if not entries:
+        return jsonify({'dates': [], 'prices': [], 'inflation_rate': 0})
+    
+    # Group by day and calculate average price per day
+    daily_prices = {}
+    for entry in entries:
+        date_key = entry.timestamp.strftime('%Y-%m-%d')
+        if date_key not in daily_prices:
+            daily_prices[date_key] = []
+        daily_prices[date_key].append(entry.price)
+    
+    # Calculate daily averages
+    dates = sorted(daily_prices.keys())
+    prices = [sum(daily_prices[d]) / len(daily_prices[d]) for d in dates]
+    
+    # Calculate inflation rate (% change from start to end)
+    inflation_rate = 0
+    if prices:
+        inflation_rate = ((prices[-1] - prices[0]) / prices[0] * 100) if prices[0] > 0 else 0
+    
+    return jsonify({
+        'dates': dates,
+        'prices': prices,
+        'inflation_rate': round(inflation_rate, 2),
+        'current_price': prices[-1] if prices else 0,
+        'min_price': min(prices) if prices else 0,
+        'max_price': max(prices) if prices else 0
+    })
+
+@app.route('/api/product/<int:product_id>/history')
+def product_history(product_id):
+    """Return historical price data for charting (last 90 days, average by day)"""
+    from flask import jsonify
+    
+    product = Product.query.get(product_id)
+    if not product:
+        abort(404)
+    
+    # Get all price entries for the last 90 days
+    cutoff_date = datetime.utcnow() - timedelta(days=90)
+    entries = PriceEntry.query.filter(
+        PriceEntry.product_id == product_id,
+        PriceEntry.timestamp >= cutoff_date
+    ).order_by(PriceEntry.timestamp.asc()).all()
+    
+    if not entries:
+        return jsonify({'dates': [], 'prices': [], 'inflation_rate': 0})
+    
+    # Group by day and calculate average price per day
+    daily_prices = {}
+    for entry in entries:
+        date_key = entry.timestamp.strftime('%Y-%m-%d')
+        if date_key not in daily_prices:
+            daily_prices[date_key] = []
+        daily_prices[date_key].append(entry.price)
+    
+    # Calculate daily averages
+    dates = sorted(daily_prices.keys())
+    prices = [sum(daily_prices[d]) / len(daily_prices[d]) for d in dates]
+    
+    # Calculate inflation rate (% change from start to end)
+    inflation_rate = 0
+    if prices:
+        inflation_rate = ((prices[-1] - prices[0]) / prices[0] * 100) if prices[0] > 0 else 0
+    
+    return jsonify({
+        'dates': dates,
+        'prices': prices,
+        'inflation_rate': round(inflation_rate, 2),
+        'current_price': prices[-1] if prices else 0,
+        'min_price': min(prices) if prices else 0,
+        'max_price': max(prices) if prices else 0
+    })
 
 if __name__ == '__main__':
     with app.app_context():

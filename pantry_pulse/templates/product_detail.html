@@ -160,6 +160,28 @@
                 <p>{{ "%.2f"|format(entries[0].price) }} € v {{ entries[0].store.name }}</p>
             </div>
 
+            <!-- Price History Chart -->
+            <div class="price-table" style="padding: 20px;">
+                <h4 style="text-align: center; color: #333; margin-bottom: 20px; font-weight: 600;">📊 Vývoj ceny (posledných 90 dní)</h4>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="priceChart"></canvas>
+                </div>
+                <div id="chartStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; text-align: center;">
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 8px;">
+                        <p style="margin: 0; font-size: 0.85rem; color: #666;">Inflácia (90D)</p>
+                        <p id="inflationRate" style="margin: 5px 0 0 0; font-size: 1.2rem; font-weight: 600; color: #2e7d32;">--</p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 8px;">
+                        <p style="margin: 0; font-size: 0.85rem; color: #666;">Min. cena</p>
+                        <p id="minPrice" style="margin: 5px 0 0 0; font-size: 1.2rem; font-weight: 600; color: #1b5e20;">--</p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 8px;">
+                        <p style="margin: 0; font-size: 0.85rem; color: #666;">Max. cena</p>
+                        <p id="maxPrice" style="margin: 5px 0 0 0; font-size: 1.2rem; font-weight: 600; color: #d32f2f;">--</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="price-table">
                 <table class="table table-hover mb-0">
                     <thead>
@@ -190,5 +212,110 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script>
+        // Fetch and display price history chart
+        async function loadPriceHistory() {
+            try {
+                // Extract product slug from URL
+                const pathParts = window.location.pathname.split('/');
+                const slug = pathParts[pathParts.length - 1];
+                
+                if (!slug) return;
+                
+                const response = await fetch(`/api/product/${slug}/history`);
+                
+                if (!response.ok) {
+                    console.log('No history data available yet');
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (!data.dates || data.dates.length === 0) {
+                    document.getElementById('chartStats').innerHTML = '<p style="grid-column: 1/-1; color: #999;">Insufficient historical data</p>';
+                    return;
+                }
+                
+                // Format dates for display
+                const formattedDates = data.dates.map(d => {
+                    const date = new Date(d);
+                    return date.toLocaleDateString('sk-SK', { month: 'short', day: 'numeric' });
+                });
+                
+                // Create chart
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: formattedDates,
+                        datasets: [{
+                            label: 'Priemerná cena (€)',
+                            data: data.prices,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: {
+                                    font: { size: 12, family: "'Poppins', sans-serif" },
+                                    padding: 15,
+                                    usePointStyle: true
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toFixed(2) + ' €';
+                                    },
+                                    font: { family: "'Poppins', sans-serif" }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: { family: "'Poppins', sans-serif" }
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Update statistics
+                const inflationColor = data.inflation_rate >= 0 ? '#d32f2f' : '#1b5e20';
+                document.getElementById('inflationRate').innerHTML = 
+                    `<span style="color: ${inflationColor}">${data.inflation_rate >= 0 ? '+' : ''}${data.inflation_rate.toFixed(2)}%</span>`;
+                document.getElementById('minPrice').innerHTML = `${data.min_price.toFixed(2)} €`;
+                document.getElementById('maxPrice').innerHTML = `${data.max_price.toFixed(2)} €`;
+                
+            } catch (error) {
+                console.error('Error loading price history:', error);
+            }
+        }
+        
+        // Load chart when page is ready
+        document.addEventListener('DOMContentLoaded', loadPriceHistory);
+    </script>
 </body>
 </html>

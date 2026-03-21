@@ -139,14 +139,21 @@ class SeleniumScraper:
         }
         self.headless = os.environ.get('SELENIUM_HEADLESS', 'True').lower() == 'true'
 
-    def scrape_all(self):
-        """Scrape all stores in parallel for speed"""
+    def scrape_all(self, products_to_scrape=None):
+        """Scrape all stores in parallel for speed
+        
+        Args:
+            products_to_scrape: Optional list of product names to scrape. If None, scrapes all PRODUCTS
+        """
+        if products_to_scrape is None:
+            products_to_scrape = PRODUCTS
+            
         all_prices = {}
 
         def scrape_store_task(store_name, base_url):
             driver = self.get_driver()
             try:
-                return store_name, self.scrape_store(driver, store_name, base_url)
+                return store_name, self.scrape_store(driver, store_name, base_url, products_to_scrape)
             finally:
                 driver.quit()
 
@@ -178,41 +185,36 @@ class SeleniumScraper:
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
     def _safe_get(self, driver, url):
         driver.get(url)
-        # Wait for page to load
-        WebDriverWait(driver, 10).until(lambda d: d.execute_script('return document.readyState') == 'complete')
+        # Wait for page to load (reduced timeout for speed)
+        WebDriverWait(driver, 5).until(lambda d: d.execute_script('return document.readyState') == 'complete')
 
-    def _is_url_reachable(self, url):
+    def _scrape_product(self, driver, store_name, product, base_url):
+        """Scrape a single product from a store"""
         try:
-            resp = requests.head(url, timeout=5, allow_redirects=True)
-            return resp.status_code < 500
+            query = product.lower().replace(' ', '+')
+            url = f"{base_url}/search?q={query}" if 'lidl' not in base_url.lower() else f"{base_url}/c/potraviny?q={query}"
+            logger.info(f"Scraping {store_name}: {product}")
+            self._safe_get(driver, url)
+            price = self.extract_price(driver)
+            return product, price
         except Exception as e:
-            logger.warning(f"URL reachability check failed for {url}: {e}")
-            return False
+            logger.error(f"{store_name} {product}: {e}")
+            return product, None
 
-    def scrape_store(self, driver, store_name, base_url):
+    def scrape_store(self, driver, store_name, base_url, products_to_scrape=None):
         prices = {}
 
-        # Skip stores that are temporarily unreachable
-        if not self._is_url_reachable(base_url):
-            logger.warning(f"Skipping {store_name}: base URL not reachable ({base_url})")
-            return prices
+        if products_to_scrape is None:
+            products_to_scrape = PRODUCTS
 
-        for product in PRODUCTS:
-            try:
-                query = product.lower().replace(' ', '+')
-                url = f"{base_url}/search?q={query}" if 'lidl' not in base_url.lower() else f"{base_url}/c/potraviny?q={query}"
-                logger.info(f"Scraping {store_name}: {product}")
-                self._safe_get(driver, url)
-                price = self.extract_price(driver)
-                if price is not None:
-                    prices[product] = price
-                else:
-                    logger.warning(f"No price found for {product}")
-            except Exception as e:
-                logger.error(f"{store_name} {product}: {e}")
-                continue  # Skip None
+        # Scrape products sequentially to avoid browser overload
+        # (Using multiple threads with one driver per thread in scrape_all)
+        for product in products_to_scrape:
+            product_name, price = self._scrape_product(driver, store_name, product, base_url)
+            if price is not None:
+                prices[product_name] = price
 
-        logger.info(f"{store_name} scraped: {list(prices.keys())}")
+        logger.info(f"{store_name} scraped: {len(prices)}/{len(products_to_scrape)} products found")
         return prices
 
     def extract_price(self, driver):
@@ -222,7 +224,7 @@ class SeleniumScraper:
         ]
         for selector in price_selectors:
             try:
-                element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                element = WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
                 text = element.text.strip()
                 match = re.search(r'(\d+[, ]\d{2})\s*€?', text)
                 if match:

@@ -1,35 +1,137 @@
-# Pantry Pulse Scraper Fix TODO
-Status: [In Progress - Step 1/6]
+# Pantry Pulse - Feature Roadmap
 
-## Steps from Plan
-### 1. **Improve selenium_scraper.py** [DONE - retries, options, cities added]
-### 2. **Update app.py** [DONE - DB clear, city save, success count]
-   - Add 3x retry with backoff for scrape_store.
-   - Enhance Chrome options: non-headless toggle, DNS/network flags (--disable-dev-shm-usage already, add --disable-web-security --disable-features=TranslateUI --no-proxy-server, update user-agent).
-   - Add store_cities dict, pass city to scrape.
-   - Filter None prices, log DNS errors specifically.
-   - Test URL access outside Selenium (logger.info(url)).
+## ✅ Completed Features
+- [x] Web scraper for grocery prices (9 stores)
+- [x] Price history chart (90-day inflation tracking)
+- [x] Optimized performance (timeout reductions, URL reachability removal)
+- [x] Product detail pages with latest prices
+- [x] Responsive design (Bootstrap 5)
+- [x] Background scraping tasks
+- [x] Database persistence (SQLite)
 
-### 2. **Update app.py** [TODO]
-   - In /scrape: Before insert, delete old PriceEntry for scraped stores/products.
-   - Set store.city = cities.get(store_name, 'Bratislava').
-   - Commit only if some prices succeeded.
+---
 
-### 3. **Update config.py** [TODO]
-   - Optional: PROXY_URL = os.environ.get('HTTP_PROXY')
+## 🚀 High Priority Features
+Status: Ready to implement
 
-### 4. **Clear Stale DB** [Manual/Execute]
-   - sqlite3 instance/pantry_pulse.db "DELETE FROM price_entry;"
-   - sqlite3 ... "DELETE FROM store WHERE city IS NULL;" or update cities.
+### 1. **Search & Filter** 
+- [ ] Search bar on homepage
+- [ ] Filter products by category (dairy, meat, produce, etc.)
+- [ ] Sort by: price, name, newest
+- **Impact**: Huge UX improvement for 300+ items
+- **Est. Time**: 2-3 hours
 
-### 5. **Test** [TODO]
-   - execute `python run.py`
-   - http://127.0.0.1:5000 -> scrape, check logs/no DNS error, DB updates.
-   - Query DB stores/products/prices.
+### 2. **Shopping List** 
+- [ ] Add products to shopping list
+- [ ] Calculate total cost across stores
+- [ ] View recommendations (cheapest combination)
+- [ ] Export/share list
+- **Impact**: Core monetization feature
+- **Est. Time**: 4-5 hours
 
-### 6. **Debug Network** [If fails]
-   - Test ping potraviny.tesco.sk
-   - Run non-headless.
-   - Update ChromeDriver manual.
+### 3. **Price Alerts**
+- [ ] Set price threshold alerts
+- [ ] Browser notifications when price drops
+- [ ] Email notifications (optional)
+- [ ] Alert history/management
+- **Impact**: Drives user engagement
+- **Est. Time**: 3-4 hours
 
-Next step: [Edit selenium_scraper.py]
+### 4. **Mobile Responsiveness**
+- [ ] Improve mobile UI for charts
+- [ ] Touch-friendly buttons and navigation
+- [ ] Mobile-first design pass
+- [ ] Test on iOS/Android
+- **Impact**: Essential for mobile traffic
+- **Est. Time**: 2-3 hours
+
+---
+
+## 📊 Medium Priority Features
+Status: Plan after high-priority
+
+### 5. **Product Favorites/Wishlist**
+- [ ] Save favorite products
+- [ ] Separate favorites view
+- [ ] Quick price checks
+- [ ] Sync with shopping list
+- **Est. Time**: 2-3 hours
+
+### 6. **Admin Dashboard**
+- [ ] View scraping statistics
+- [ ] Monitor scraper errors
+- [ ] Manual scrape triggers
+- [ ] Store/product management
+- [ ] Scrape interval configuration
+- **Est. Time**: 4-5 hours
+
+### 7. **Product Comparison**
+- [ ] Compare 2-3 products side-by-side
+- [ ] Side-by-side price chart
+- [ ] Price difference highlighting
+- [ ] Export comparison as PDF/CSV
+- **Est. Time**: 3-4 hours
+
+### 8. **Pagination/Lazy Loading**
+- [ ] Paginate product list
+- [ ] Infinite scroll option
+- [ ] Improve homepage load speed
+- [ ] Sort products efficiently
+- **Est. Time**: 1-2 hours
+
+---
+
+## 💡 Lower Priority Features
+Status: Consider later
+
+### 9. **Dark Mode**
+- [ ] Dark theme toggle
+- [ ] User preference persistence
+- **Est. Time**: 1-2 hours
+
+### 10. **User Accounts**
+- [ ] User authentication
+- [ ] Save preferences
+- [ ] Price alert history
+- [ ] Shopping list sync across devices
+- **Est. Time**: 6-8 hours
+
+### 11. **Rate Limiting & Robustness**
+- [ ] Implement rate limiting
+- [ ] Better error handling for scraper failures
+- [ ] Graceful degradation
+- [ ] Retry logic with exponential backoff
+- **Est. Time**: 2-3 hours
+
+### 12. **Docker Support**
+- [ ] Create Dockerfile
+- [ ] docker-compose.yml for easy deployment
+- [ ] Environment variable examples
+- **Est. Time**: 1-2 hours
+
+### 13. **Unit Tests**
+- [ ] Test scraper logic
+- [ ] Test Flask routes
+- [ ] Test database operations
+- [ ] CI/CD integration
+- **Est. Time**: 4-5 hours
+
+### 14. **Internationalization (i18n)**
+- [ ] Multi-language support (EN, SK, CZ, etc.)
+- [ ] Currency conversion
+- [ ] Regional price comparisons
+- **Est. Time**: 3-4 hours
+
+---
+
+## 🐛 Known Issues
+- Scraper occasionally fails on network timeouts
+- No user session management
+- Chart needs more data points for accuracy
+- Mobile layout could use refinement
+
+## 📝 Notes
+- All times are estimates
+- Prioritize based on user feedback
+- Test thoroughly after each feature
+- Update README after major releases
