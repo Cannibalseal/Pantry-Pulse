@@ -8,18 +8,19 @@
 - [x] Responsive design (Bootstrap 5)
 - [x] Background scraping tasks
 - [x] Database persistence (SQLite)
+- [x] Search & Filter (search bar, category filtering, sorting)
 
 ---
 
 ## 🚀 High Priority Features
-Status: Ready to implement
+Status: 1/4 Implemented
 
-### 1. **Search & Filter** 
-- [ ] Search bar on homepage
-- [ ] Filter products by category (dairy, meat, produce, etc.)
-- [ ] Sort by: price, name, newest
+### ✅ 1. **Search & Filter** (COMPLETED)
+- [x] Search bar on homepage
+- [x] Filter products by category
+- [x] Sort by: price, name, newest
 - **Impact**: Huge UX improvement for 300+ items
-- **Est. Time**: 2-3 hours
+- **Status**: Done ✓
 
 ### 2. **Shopping List** 
 - [ ] Add products to shopping list

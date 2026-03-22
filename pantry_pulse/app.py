@@ -3,7 +3,7 @@ import threading
 import base64
 from urllib.parse import quote
 
-from flask import Flask, render_template, request, flash, redirect, url_for, abort
+from flask import Flask, render_template, request, flash, redirect, url_for, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from pantry_pulse.config import Config
 from datetime import datetime, timedelta
@@ -39,6 +39,33 @@ class PriceEntry(db.Model):
 
 
 # --- Helper functions --------------------------------------------------------
+def get_product_category(product_name):
+    """Assign a category to a product based on its name"""
+    name_lower = product_name.lower()
+    
+    category_keywords = {
+        'Mliečne produkty': ['mlieko', 'jogurt', 'smotana', 'maslo', 'syr', 'tvaroh'],
+        'Pekáreň': ['chlieb', 'rožky', 'croissant', 'slnečnica', 'syrečky'],
+        'Cestoviny & Obilniny': ['cestoviny', 'ryža', 'múka', 'ovsejný'],
+        'Zelenina': ['zemiaky', 'paradajky', 'paprika', 'okurky', 'mrkva', 'cesnak', 'cibula', 'kapusta', 'špenát', 'brokolica', 'karfiol', 'kaleráb'],
+        'Ovocie': ['banány', 'jablká', 'hruške', 'pomaranče', 'citrón', 'jahody', 'maliny', 'hrozno', 'broskyne', 'melón', 'ananás', 'mango', 'kiwi', 'slivka'],
+        'Mäso & Ryby': ['kuracie', 'hovädzie', 'bravčové', 'ryba', 'losos', 'tuna', 'sardíny', 'klobása'],
+        'Sladkosti': ['čokoláda', 'sladkosti', 'bonbóny', 'karamel', 'medovina', 'med', 'marmeláda', 'nutella'],
+        'Orechové produkty': ['arašidové', 'kokos', 'orechy', 'mandľa'],
+        'Nápoje': ['čaj', 'káva', 'voda', 'džús', 'cola', 'pivo', 'vino', 'limonáda'],
+        'Korenia & Koreniny': ['olej', 'soľ', 'cukor', 'ocot', 'horčica', 'ketchup', 'omáčka', 'polievka'],
+        'Vajcia': ['vajcia', 'vejcia', 'vagcia'],
+        'Zmrazené potraviny': ['zmrazené', 'mrazené', 'ľad', 'frites', 'pelmeni'],
+    }
+    
+    for category, keywords in category_keywords.items():
+        for keyword in keywords:
+            if keyword in name_lower:
+                return category
+    
+    return 'Ostatné'
+
+
 def get_product_emoji(product_name):
     """Return an emoji that matches the product category"""
     name_lower = product_name.lower()
@@ -125,7 +152,7 @@ def _save_scraped_data(scraped_data, scraper):
 
             product = Product.query.filter_by(name=product_name).first()
             if not product:
-                product = Product(name=product_name)
+                product = Product(name=product_name, category=get_product_category(product_name))
                 db.session.add(product)
                 db.session.flush()
 
@@ -293,6 +320,61 @@ def product_history(product_id):
         'current_price': prices[-1] if prices else 0,
         'min_price': min(prices) if prices else 0,
         'max_price': max(prices) if prices else 0
+    })
+
+@app.route('/api/products')
+def api_products():
+    """API endpoint for searching and filtering products"""
+    search_query = request.args.get('search', '').strip()
+    category = request.args.get('category', '').strip()
+    sort_by = request.args.get('sort', 'name')
+    
+    # Start with all products
+    query = Product.query
+    
+    # Apply search filter
+    if search_query:
+        query = query.filter(Product.name.ilike(f'%{search_query}%'))
+    
+    # Apply category filter
+    if category:
+        query = query.filter(Product.category == category)
+    
+    # Apply sorting
+    if sort_by == 'price':
+        # Sort by lowest average price
+        query = query.outerjoin(PriceEntry).group_by(Product.id).order_by(db.func.avg(PriceEntry.price).asc())
+    elif sort_by == 'newest':
+        # Sort by most recently added
+        query = query.order_by(Product.id.desc())
+    else:  # name (default)
+        query = query.order_by(Product.name.asc())
+    
+    products = query.all()
+    
+    # Build response
+    response = {
+        'products': [
+            {
+                'id': p.id,
+                'name': p.name,
+                'category': p.category,
+                'slug': p.name.lower().replace(' ', '-'),
+                'image_url': get_product_image_url(p.name)
+            }
+            for p in products
+        ],
+        'count': len(products)
+    }
+    
+    return jsonify(response)
+
+@app.route('/api/categories')
+def api_categories():
+    """API endpoint to get all available categories"""
+    categories = db.session.query(Product.category).distinct().filter(Product.category != None).order_by(Product.category).all()
+    return jsonify({
+        'categories': [c[0] for c in categories if c[0]]
     })
 
 if __name__ == '__main__':

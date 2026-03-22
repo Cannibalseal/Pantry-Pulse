@@ -34,6 +34,44 @@
             opacity: 0.95;
         }
         .container { padding: 0 15px; }
+        .search-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .search-input {
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            padding: 12px 16px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        .search-input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .filter-select {
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            padding: 8px 12px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: border-color 0.3s;
+            background: white;
+        }
+        .filter-select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
         .card { 
             border: none; 
             border-radius: 15px; 
@@ -104,6 +142,16 @@
         }
         .row { margin: -12px; }
         [class*="col-"] { padding: 12px; }
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
         
         @media (max-width: 768px) {
             .header { padding: 20px 10px; margin-bottom: 15px; }
@@ -112,6 +160,8 @@
             [class*="col-"] { padding: 8px; }
             .card-body { min-height: 240px; }
             .product-image { width: 110px; height: 110px; }
+            .search-section { padding: 15px; }
+            .filter-group { gap: 8px; }
         }
         
         @media (max-width: 480px) {
@@ -122,6 +172,13 @@
             .card-body { min-height: 220px; padding: 15px; }
             .product-image { width: 90px; height: 90px; }
             .card-title { font-size: 0.85rem; }
+            .search-section { padding: 12px; }
+            .filter-group {
+                flex-direction: column;
+            }
+            .filter-select {
+                width: 100%;
+            }
         }
 
         a { text-decoration: none !important; }
@@ -146,38 +203,135 @@
             {% endif %}
         {% endwith %}
         
+        <div class="search-section">
+            <input type="text" id="searchInput" class="search-input w-100" placeholder="🔍 Hľadaj produkty..." autocomplete="off">
+            <div class="filter-group">
+                <select id="categoryFilter" class="filter-select">
+                    <option value="">Všetky kategórie</option>
+                </select>
+                <select id="sortFilter" class="filter-select">
+                    <option value="name">Meno (A-Z)</option>
+                    <option value="price">Najnižšia cena</option>
+                    <option value="newest">Najnovšie</option>
+                </select>
+            </div>
+        </div>
+        
         <div class="mb-4">
-            <h2 class="section-title">Najnovšie ceny</h2>
-            <p class="section-subtitle">Porovnaj ceny vo všetkých obchodoch</p>
+            <h2 class="section-title">Produkty</h2>
+            <p class="section-subtitle" id="resultCount">Porovnaj ceny vo všetkých obchodoch</p>
         </div>
 
-        {% if products %}
+        <div id="loadingIndicator" class="loading-spinner" style="display: none;">
+            <div class="spinner-border" role="status"></div>
+            <p>Načítavam...</p>
+        </div>
+
         <div class="row" id="products-grid">
-            {% for product in products %}
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                <a href="/product/{{ product.name.lower().replace(' ', '-') }}" class="text-decoration-none">
-                    <div class="card">
-                        <div class="card-body">
-                            <img src="{{ get_product_image_url(product.name) }}" 
-                                 alt="{{ product.name }}" 
-                                 class="product-image"
-                                 loading="lazy">
-                            <h5 class="card-title">{{ product.name }}</h5>
-                            <p class="card-text">Porovnaj ceny &rarr;</p>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            {% endfor %}
         </div>
-        {% else %}
-        <div class="alert alert-warning text-center" role="alert">
-            <h5 class="mb-2">📦 Bez dát</h5>
-            <p class="mb-0">Dáta sa aktualizujú automaticky. Prosím, vrátite sa o chvíľu.</p>
+
+        <div id="noResults" class="no-results" style="display: none;">
+            <h5 class="mb-2">🔍 Žiadne výsledky</h5>
+            <p>Skús inný vyhľadávací výraz alebo kategóriu.</p>
         </div>
-        {% endif %}
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const sortFilter = document.getElementById('sortFilter');
+        const productsGrid = document.getElementById('products-grid');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const noResults = document.getElementById('noResults');
+        const resultCount = document.getElementById('resultCount');
+        
+        let debounceTimer;
+        
+        // Load categories on page load
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                const data = await response.json();
+                
+                data.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    categoryFilter.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+        
+        // Load products with filters
+        async function loadProducts() {
+            const search = searchInput.value.trim();
+            const category = categoryFilter.value;
+            const sort = sortFilter.value;
+            
+            loadingIndicator.style.display = 'block';
+            productsGrid.innerHTML = '';
+            noResults.style.display = 'none';
+            
+            try {
+                const params = new URLSearchParams();
+                if (search) params.append('search', search);
+                if (category) params.append('category', category);
+                if (sort) params.append('sort', sort);
+                
+                const response = await fetch(`/api/products?${params.toString()}`);
+                const data = await response.json();
+                
+                loadingIndicator.style.display = 'none';
+                
+                if (data.count === 0) {
+                    noResults.style.display = 'block';
+                    resultCount.textContent = 'Žiadne produkty';
+                    return;
+                }
+                
+                resultCount.textContent = `${data.count} produktov`;
+                
+                data.products.forEach(product => {
+                    const col = document.createElement('div');
+                    col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
+                    col.innerHTML = `
+                        <a href="/product/${product.slug}" class="text-decoration-none">
+                            <div class="card">
+                                <div class="card-body">
+                                    <img src="${product.image_url}" 
+                                         alt="${product.name}" 
+                                         class="product-image"
+                                         loading="lazy">
+                                    <h5 class="card-title">${product.name}</h5>
+                                    <p class="card-text">Porovnaj ceny &rarr;</p>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                    productsGrid.appendChild(col);
+                });
+            } catch (error) {
+                console.error('Error loading products:', error);
+                loadingIndicator.style.display = 'none';
+                noResults.style.display = 'block';
+            }
+        }
+        
+        // Event listeners
+        searchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(loadProducts, 300);
+        });
+        
+        categoryFilter.addEventListener('change', loadProducts);
+        sortFilter.addEventListener('change', loadProducts);
+        
+        // Initial load
+        loadCategories();
+        loadProducts();
+    </script>
 </body>
 </html>

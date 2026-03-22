@@ -10,6 +10,7 @@
 - 🚀 **Fast Performance**: Optimized scraping with parallel store processing
 - 📱 **Responsive Design**: Works on desktop, tablet, and mobile
 - 🔄 **Background Updates**: Automatic price updates without blocking the UI
+- 🔎 **Search & Filter**: Search products by name, filter by category, sort by price/name/newest
 
 ### Tech Stack
 - **Backend**: Flask (Python)
@@ -58,8 +59,10 @@
 
 #### Browsing Products
 - Homepage displays all 300+ products with emojis
-- Click on any product to view detailed pricing
-- See all stores and their current prices
+- Use the search bar to find products by name
+- Filter products by category (dairy, meat, vegetables, etc.)
+- Sort by name, lowest price, or newest products
+- Click on any product to view detailed pricing across all stores
 
 #### Viewing Price History
 - Each product page shows a 90-day price chart
@@ -80,7 +83,7 @@ SELENIUM_HEADLESS=True
 ### Roadmap
 
 #### 🚀 High Priority
-- [ ] Search & filtering by product name/category
+- [x] Search & filtering by product name/category
 - [ ] Shopping list (add items, calculate total)
 - [ ] Price alerts (notify when price drops)
 - [ ] Mobile responsiveness improvements
